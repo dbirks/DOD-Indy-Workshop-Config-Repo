@@ -12,7 +12,7 @@ pipelines:
         pipeline: build_and_package
         stage: test_stage
       SourceCodeRepo:
-        git: https://github.com/dbirks/DOD-Indy-Workshop-Config-Repo.git
+        git: https://github.com/dbirks/node-bulletin-board.git
         shallow_clone: false
     stages:
     - deploy_to_prod:
