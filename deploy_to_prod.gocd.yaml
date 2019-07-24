@@ -33,6 +33,8 @@ pipelines:
                 artifact_origin: external
                 run_if: passed
             - exec:
-                command: ./app-deployment.sh
+                command: /bin/bash
                 arguments:
+                - -c
+                - ./app-deployment.sh
                 run_if: passed
