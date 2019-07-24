@@ -36,7 +36,7 @@ pipelines:
                 command: "echo ready"
                 run_if: passed
     stages:
-    - deploy_to_prod:
+    - deploy_to_uat:
         approval:
           type: success
         jobs:
