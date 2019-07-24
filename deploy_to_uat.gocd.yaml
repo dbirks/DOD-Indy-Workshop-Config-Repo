@@ -1,21 +1,31 @@
 format_version: 4
 pipelines:
-  deploy_to_prod:
+  deploy_to_uat:
     group: kubernetes
-    display_order: 3
+    display_order: 2
     environment_variables:
-      NAMESPACE: gocd
+      NAMESPACE: uat
     secure_variables:
       KUBE_TOKEN: AES:PqOQDwfII0pqPgJEvqK+Rw==:f2P63maeN97txIKTR9YuDMVHXPsiV4YvOfWzVKy+kWgzbOqvhYd81Nwdrc4tIat2jCfH8TFDBsTwmY/OB3JvenKoXxdtGU9XaYRbGq32AlEMczmKEXVZ71eWhhQOP2KHNaSrQ8AqRIG1B7NOIq/jzXmF4gNMPqrFrtPp+XKeCmORalwzCV1W/VOFfZkzDgh5o2qTqcm8PZPZPi/HSWHE1j59cb3T5soNpaLHNdPCSF/5Rbq2dC5pIOb7VnKow4rkTRCOL3vwcCAANNidVX1wSr0im1flBy/3dzm54s6LyiE5MoVc+/tgAKZos9KwncFMNW1OWmQdV8eJYNwcciNBU/pj2VdVsy8hyLj9ZNg1A/Qtm3CfOyrgeen19aqV4LQ/ggT53ZxZfQN4cE9VdQS2kwwwS7QnQISJp//2G46cpFxeKFpj7jBJjVRd6KMiFca2slRwK/kdj7VGF+huGyBFhpcEaQszIhiP8RRY1gHpqtv94W1jd0FaZw1zX2uALMh2E7tRuM+LB8UKmGwcnnPFpirXijLIjrRiDHBtz7C3+OlhppEyokz/jL3QizWYo0svEy44Nk6LsCCC5ZfqZiL8yAa9Vv0+npf15cWb0auCK6aYgWH9nLyUBJJuVEKcqafkyu8/0tZqKNBqLltoBf1ROG8m0g3x6YNxkpaDX154N1/pA94g7LOWy8/r+IomKJBHXQ92i650cjQkHsp7k3eEk2LM9ghzY+laxTnu8JEeHRTDNUEgM7Ps1mXijH42w+H8adxJNWbKIayJhGiAN1TjErG30BE62XLG3IAYwm+C119AxOstS7x/cPZghsHX8lenQzkxg5RN+rX11YO/xn/VEjMjeXCv4fHjTxCbp2VinC29F6d3RMIRW0Pes7eKmNxPZJOiIqfs7n3mzwptGYWLCwZuA1OP+jiajefG3cvZ+mLbffEiXqAbLs7cvp3TCUJq69BWy47j8WQvpO4fyJIixpfHfLNtOxYYTyOl18ZobHsyQwVXyZpuGAZ7+JcEqq1ZPAfS+uC0ptwnAleKuC2HmRhqF++fOgpodD3yl3h8Gc7fS7C4XlIxTXOta/uKHmBgs29lw42UNZs1wGJHeYBkBQ==
     materials:
-      build:
+      upstream:
         pipeline: build_and_package
-        stage: test_stage
+        stage: build_stage
       SourceCodeRepo:
         git: https://github.com/dbirks/node-bulletin-board.git
         shallow_clone: false
     stages:
     - traffic_light:
+        notify_stage: success
+        jobs:
+          notify_job:
+            elastic_profile_id: demo-app
+            tasks:
+            - exec:
+                command: echo
+                arguments: 
+                - "ready"
+    - deploy_to_uat:
         approval:
           type: manual
         jobs:
@@ -24,7 +34,6 @@ pipelines:
             tasks:
             - fetch:
                 options:
-                  EnvironmentVariablePrefix: ''
                   SkipImagePulling: 'true'
                 artifact_id: bulletin-board
                 pipeline: build_and_package
@@ -33,29 +42,17 @@ pipelines:
                 artifact_origin: external
                 run_if: passed
             - exec:
-                command: "echo ready"
+                command: ./app-deployment.sh
+                arguments:
                 run_if: passed
-    stages:
-    - deploy_to_uat:
-        approval:
-          type: success
+    - approval_stage:
+        approval: 
+          type: manual
         jobs:
-          deploy:
+          approval_job:
             elastic_profile_id: demo-app
             tasks:
-            - fetch:
-                options:
-                  EnvironmentVariablePrefix: ''
-                  SkipImagePulling: 'true'
-                artifact_id: bulletin-board
-                pipeline: build_and_package
-                stage: build_stage
-                job: build_image
-                artifact_origin: external
-                run_if: passed
             - exec:
-                command: /bin/bash
-                arguments:
-                - -c
-                - ./app-deployment.sh
-                run_if: passed
+                command: echo
+                arguments: 
+                - "approved"
